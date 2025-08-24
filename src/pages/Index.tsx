@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BB84Simulator } from "@/components/quantum/BB84Simulator";
-import { QiskitBB84SimulatorComponent } from "@/components/quantum/QiskitBB84Simulator";
+import { QiskitLab } from "@/components/quantum/QiskitLab";
 import { QuantumCircuitVisualizer } from "@/components/quantum/QuantumCircuitVisualizer";
 import { QuantumStats } from "@/components/quantum/QuantumStats";
 import { ProtocolInfo } from "@/components/quantum/ProtocolInfo";
@@ -91,7 +91,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="qiskit" className="space-y-6">
-            <QiskitBB84SimulatorComponent />
+            <QiskitLab />
           </TabsContent>
 
           <TabsContent value="circuit" className="space-y-6">
