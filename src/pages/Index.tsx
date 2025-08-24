@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BB84Simulator } from "@/components/quantum/BB84Simulator";
+import { QiskitBB84SimulatorComponent } from "@/components/quantum/QiskitBB84Simulator";
+import { QuantumCircuitVisualizer } from "@/components/quantum/QuantumCircuitVisualizer";
 import { QuantumStats } from "@/components/quantum/QuantumStats";
 import { ProtocolInfo } from "@/components/quantum/ProtocolInfo";
 import { AdvancedSimulator } from "@/components/quantum/AdvancedSimulator";
@@ -56,12 +58,15 @@ const Index = () => {
       {/* Main Simulator Interface */}
       <section className="container mx-auto px-6 py-12">
         <Tabs defaultValue="simulator" className="space-y-8">
-        <TabsList className="grid w-full grid-cols-4 bg-card">
+        <TabsList className="grid w-full grid-cols-5 bg-card">
           <TabsTrigger value="simulator" className="data-[state=active]:bg-quantum-entangled/20">
             BB84 Simulator
           </TabsTrigger>
-          <TabsTrigger value="advanced" className="data-[state=active]:bg-quantum-alice/20">
-            Advanced Lab
+          <TabsTrigger value="qiskit" className="data-[state=active]:bg-quantum-alice/20">
+            Qiskit Lab
+          </TabsTrigger>
+          <TabsTrigger value="circuit" className="data-[state=active]:bg-quantum-bob/20">
+            Circuit Builder
           </TabsTrigger>
           <TabsTrigger value="analytics" className="data-[state=active]:bg-quantum-alice/20">
             Analytics
@@ -83,6 +88,14 @@ const Index = () => {
                 <QuantumStats />
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="qiskit" className="space-y-6">
+            <QiskitBB84SimulatorComponent />
+          </TabsContent>
+
+          <TabsContent value="circuit" className="space-y-6">
+            <QuantumCircuitVisualizer />
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-6">
