@@ -1,4 +1,4 @@
-import { useState } from "react";
+ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +58,7 @@ const Index = () => {
       {/* Main Simulator Interface */}
       <section className="container mx-auto px-6 py-12">
         <Tabs defaultValue="simulator" className="space-y-8">
-        <TabsList className="grid w-full grid-cols-5 bg-card">
+        <TabsList className="grid w-full grid-cols-6 bg-card">
           <TabsTrigger value="simulator" className="data-[state=active]:bg-quantum-entangled/20">
             BB84 Simulator
           </TabsTrigger>
@@ -70,6 +70,9 @@ const Index = () => {
           </TabsTrigger>
           <TabsTrigger value="analytics" className="data-[state=active]:bg-quantum-alice/20">
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="advanced" className="data-[state=active]:bg-quantum-alice/20">
+            Advanced Simulator
           </TabsTrigger>
           <TabsTrigger value="protocol" className="data-[state=active]:bg-quantum-bob/20">
             Protocol Info

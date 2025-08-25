@@ -1,0 +1,39 @@
+
+digraph G {
+    rankdir=TB;
+    splines=ortho;
+    node [shape=box, style="rounded,filled", fillcolor="lightblue"];
+
+    subgraph cluster_frontend {
+        label = "Frontend (React)";
+        style = "rounded";
+        color = "blue";
+
+        App [label="App.tsx"];
+        BB84 [label="BB84Simulator"];
+        QuantumStats [label="QuantumStats"];
+        QiskitLab [label="QiskitLab"];
+
+        App -> BB84;
+        App -> QuantumStats;
+        App -> QiskitLab;
+    }
+
+    subgraph cluster_backend {
+        label = "Backend (Flask)";
+        style = "rounded";
+        color = "green";
+
+        Server [label="app.py"];
+        API [label="REST API"];
+        Qiskit [label="Qiskit"];
+
+        Server -> API;
+        API -> Qiskit;
+    }
+
+    BB84 -> API [label="/api/bb84/simulate"];
+    QuantumStats -> API [label="/api/stats/quantum"];
+    QiskitLab -> API [label="/api/qiskit/submit-job"];
+
+}

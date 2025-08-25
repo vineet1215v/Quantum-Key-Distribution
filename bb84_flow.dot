@@ -1,0 +1,44 @@
+
+digraph G {
+    rankdir=LR;
+    node [shape=box, style="filled", fillcolor="lightyellow"];
+
+    subgraph cluster_alice {
+        label = "Alice";
+        style = "rounded";
+        color = "red";
+
+        AliceBits [label="Generate Random Bits"];
+        AliceBases [label="Generate Random Bases"];
+        AliceEncode [label="Encode Qubits"];
+    }
+
+    subgraph cluster_bob {
+        label = "Bob";
+        style = "rounded";
+        color = "blue";
+
+        BobBases [label="Generate Random Bases"];
+        BobMeasure [label="Measure Qubits"];
+    }
+
+    subgraph cluster_public {
+        label = "Public Channel";
+        style = "rounded";
+        color = "gray";
+
+        CompareBases [label="Compare Bases"];
+        SiftKey [label="Sift Key"];
+        FinalKey [label="Final Secret Key", shape=ellipse, fillcolor="lightgreen"];
+    }
+
+    AliceBits -> AliceEncode;
+    AliceBases -> AliceEncode;
+    AliceEncode -> BobMeasure [label="Quantum Channel"];
+    BobBases -> BobMeasure;
+    BobMeasure -> CompareBases;
+    AliceBases -> CompareBases;
+    CompareBases -> SiftKey;
+    SiftKey -> FinalKey;
+
+}

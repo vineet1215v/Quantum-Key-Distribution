@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,18 +15,29 @@ import {
   Settings,
   CircuitBoard,
   Atom,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import { QiskitConnection } from './QiskitConnection';
 import { QiskitJobMonitor } from './QiskitJobMonitor';
-import { qiskitAPI, QiskitDevice, QiskitQuantumJob } from '@/lib/qiskit-api';
+import { 
+  getQuantumDevices, 
+  submitQuantumJob, 
+  generateBB84QASM,
+  generateBellCircuit,
+  QuantumDevice,
+  JobSubmissionRequest,
+  JobSubmissionResponse,
+  QASMGenerationRequest
+} from '@/lib/quantum-api';
 import { useToast } from '@/hooks/use-toast';
 
 export const QiskitLab: React.FC = () => {
-  const [selectedDevice, setSelectedDevice] = useState<QiskitDevice | null>(null);
-  const [jobs, setJobs] = useState<QiskitQuantumJob[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<QuantumDevice | null>(null);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [currentTab, setCurrentTab] = useState('bb84');
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [shots, setShots] = useState(1024);
   const [customQASM, setCustomQASM] = useState('');
   const { toast } = useToast();
@@ -38,9 +49,9 @@ export const QiskitLab: React.FC = () => {
   // Bell State state
   const [bellResults, setBellResults] = useState<any>(null);
 
-  const handleJobUpdate = (updatedJob: QiskitQuantumJob) => {
+  const handleJobUpdate = (updatedJob: any) => {
     setJobs(prev => prev.map(job => 
-      job.id === updatedJob.id ? updatedJob : job
+      job.job_id === updatedJob.job_id ? updatedJob : job
     ));
   };
 
@@ -60,30 +71,37 @@ export const QiskitLab: React.FC = () => {
 
     setIsExecuting(true);
     try {
-      const job = await qiskitAPI.submitJob({
+      const request: JobSubmissionRequest = {
         qasm,
-        name,
         shots,
         backend: selectedDevice.name
-      });
+      };
 
-      setJobs(prev => [job, ...prev]);
+      const response = await submitQuantumJob(request);
       
-      toast({
-        title: "Job Submitted",
-        description: `Quantum circuit submitted to ${selectedDevice.name}`,
-      });
+      if (response.success) {
+        const job = {
+          job_id: response.job_id,
+          status: response.status,
+          results: response.results,
+          created_at: new Date().toISOString(),
+          name: name
+        };
 
-      // Simulate job completion for demo
-      setTimeout(async () => {
-        const completedJob = await qiskitAPI.getJob(job.id);
-        handleJobUpdate(completedJob);
-      }, 3000);
+        setJobs(prev => [job, ...prev]);
+        
+        toast({
+          title: "Job Submitted",
+          description: `Quantum circuit submitted to ${selectedDevice.name}`,
+        });
+      } else {
+        throw new Error(response.error || 'Failed to submit job');
+      }
 
     } catch (error) {
       toast({
         title: "Execution Failed",
-        description: "Failed to submit quantum circuit",
+        description: error instanceof Error ? error.message : "Failed to submit quantum circuit",
         variant: "destructive"
       });
     } finally {
@@ -92,27 +110,68 @@ export const QiskitLab: React.FC = () => {
   };
 
   const runBB84Protocol = async () => {
-    // Generate random bits and bases for Alice and Bob
-    const aliceBits = Array.from({ length: keyLength }, () => Math.floor(Math.random() * 2));
-    const aliceBases = Array.from({ length: keyLength }, () => Math.floor(Math.random() * 2));
-    const bobBases = Array.from({ length: keyLength }, () => Math.floor(Math.random() * 2));
+    setIsLoading(true);
+    try {
+      // Generate random bits and bases for Alice and Bob
+      const aliceBits = Array.from({ length: keyLength }, () => Math.floor(Math.random() * 2));
+      const aliceBases = Array.from({ length: keyLength }, () => Math.floor(Math.random() * 2));
+      const bobBases = Array.from({ length: keyLength }, () => Math.floor(Math.random() * 2));
 
-    const qasm = qiskitAPI.generateBB84QASM(aliceBits, aliceBases, bobBases);
-    
-    setBB84Results({
-      aliceBits,
-      aliceBases,
-      bobBases,
-      qasm
-    });
+      const request: QASMGenerationRequest = {
+        alice_bits: aliceBits,
+        alice_bases: aliceBases,
+        bob_bases: bobBases
+      };
 
-    await executeCircuit(qasm, 'BB84 Protocol');
+      const response = await generateBB84QASM(request);
+      
+      if (response.success) {
+        setBB84Results({
+          aliceBits,
+          aliceBases,
+          bobBases,
+          qasm: response.qasm
+        });
+
+        await executeCircuit(response.qasm, 'BB84 Protocol');
+      } else {
+        throw new Error(response.error || 'Failed to generate QASM');
+      }
+    } catch (error) {
+      toast({
+        title: "BB84 Protocol Failed",
+        description: error instanceof Error ? error.message : "Failed to run BB84 protocol",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const runBellState = async () => {
-    const qasm = qiskitAPI.generateBellStateQASM();
-    setBellResults({ qasm });
-    await executeCircuit(qasm, 'Bell State');
+    setIsLoading(true);
+    try {
+      const response = await generateBellCircuit();
+      
+      if (response.success) {
+        setBellResults({ 
+          qasm: response.qasm,
+          circuit_image: response.circuit_image
+        });
+
+        await executeCircuit(response.qasm, 'Bell State');
+      } else {
+        throw new Error(response.error || 'Failed to generate Bell circuit');
+      }
+    } catch (error) {
+      toast({
+        title: "Bell State Failed",
+        description: error instanceof Error ? error.message : "Failed to create Bell state",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const runCustomCircuit = async () => {
@@ -217,11 +276,15 @@ export const QiskitLab: React.FC = () => {
                     </div>
                     <Button
                       onClick={runBB84Protocol}
-                      disabled={!selectedDevice || isExecuting}
+                      disabled={!selectedDevice || isExecuting || isLoading}
                       className="bg-quantum-entangled hover:bg-quantum-entangled/80"
                     >
-                      <Play className="w-4 h-4 mr-2" />
-                      Run BB84 Protocol
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4 mr-2" />
+                      )}
+                      {isLoading ? "Generating..." : "Run BB84 Protocol"}
                     </Button>
                   </div>
 
@@ -263,11 +326,15 @@ export const QiskitLab: React.FC = () => {
 
                   <Button
                     onClick={runBellState}
-                    disabled={!selectedDevice || isExecuting}
+                    disabled={!selectedDevice || isExecuting || isLoading}
                     className="bg-quantum-alice hover:bg-quantum-alice/80"
                   >
-                    <Zap className="w-4 h-4 mr-2" />
-                    Create Bell State
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Zap className="w-4 h-4 mr-2" />
+                    )}
+                    {isLoading ? "Generating..." : "Create Bell State"}
                   </Button>
 
                   {bellResults && (

@@ -6,10 +6,11 @@ import { Progress } from "@/components/ui/progress";
 import { QuantumBit } from "./QuantumBit";
 import { QuantumChannel } from "./QuantumChannel";
 import { ParticipantCard } from "./ParticipantCard";
-import { Play, Pause, RotateCcw, Eye, EyeOff, Settings } from "lucide-react";
+import { Play, Pause, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SecureMessaging } from "./SecureMessaging";
+import { runBB84Simulation } from "@/lib/quantum-api";
 
 interface BB84SimulatorProps {
   isSimulating: boolean;
@@ -57,33 +58,32 @@ export const BB84Simulator = ({ isSimulating, onSimulationChange }: BB84Simulato
     return () => clearInterval(interval);
   }, [isSimulating, onSimulationChange]);
 
-  const startSimulation = () => {
-    // Generate simulation data
-    const bits = Array.from({ length: qubitLength }, () => Math.random() > 0.5 ? 1 : 0);
-    const aliceBases = Array.from({ length: qubitLength }, () => Math.random() > 0.5 ? 1 : 0);
-    const bobBases = Array.from({ length: qubitLength }, () => Math.random() > 0.5 ? 1 : 0);
-    const bobResults = bits.map((bit, i) => {
-      // If bases match, Bob gets correct bit, otherwise random
-      if (aliceBases[i] === bobBases[i]) {
-        return bit;
+  const startSimulation = async () => {
+    try {
+      const response = await runBB84Simulation({ 
+        qubit_length: qubitLength, 
+        eve_enabled: eveEnabled 
+      });
+      
+      if (response.success) {
+        setSimulationData({
+          aliceBits: response.data.alice_bits,
+          aliceBases: response.data.alice_bases,
+          bobBases: response.data.bob_bases,
+          bobResults: response.data.bob_results,
+          matchingBases: response.data.matching_bases,
+          finalKey: response.data.final_key
+        });
+
+        setCurrentStep(0);
+        setProgress(0);
+        onSimulationChange(true);
+      } else {
+        console.error('Simulation error:', response.error);
       }
-      return Math.random() > 0.5 ? 1 : 0;
-    });
-    const matching = aliceBases.map((base, i) => base === bobBases[i]);
-    const finalKey = bits.filter((_, i) => matching[i]);
-
-    setSimulationData({
-      aliceBits: bits,
-      aliceBases,
-      bobBases,
-      bobResults,
-      matchingBases: matching,
-      finalKey
-    });
-
-    setCurrentStep(0);
-    setProgress(0);
-    onSimulationChange(true);
+    } catch (error) {
+      console.error('Error starting simulation:', error);
+    }
   };
 
   const resetSimulation = () => {
